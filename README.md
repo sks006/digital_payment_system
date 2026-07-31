@@ -1,7 +1,7 @@
 # Digital_payment_system
 
 
-A revolutionary digital payment system that lets you spend your crypto without selling it. Built on Solana with Anchor smart contracts, Lamyt enables credit mode spending, 2% cashback rewards, and daily interest on collateral.
+A revolutionary digital payment system that lets you spend your crypto without selling it. Built on Solana with Anchor smart contracts,  enables credit mode spending, 2% cashback rewards, and daily interest on collateral.
 
 ## 🚀 Features
 
