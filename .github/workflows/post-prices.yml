@@ -1,0 +1,42 @@
+name: Update Pyth Price Feeds on Devnet
+
+on:
+  schedule:
+    # Run every 10 minutes to keep devnet oracle accounts fresh
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  update-feeds:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'apps/web/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          cd apps/web
+          npm ci
+
+      - name: Configure Solana Payer Key
+        run: |
+          mkdir -p ~/.config/solana
+          echo "${{ secrets.SOLANA_PAYER_KEY }}" > ~/.config/solana/id.json
+          chmod 600 ~/.config/solana/id.json
+
+      - name: Run post-prices
+        run: |
+          cd apps/web
+          node post-prices.mjs
+
+      - name: Run post-eur
+        run: |
+          cd apps/web
+          node post-eur.mjs

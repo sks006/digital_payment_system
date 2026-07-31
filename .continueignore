@@ -1,0 +1,34 @@
+# Dependencies (Massive folders that will crash indexing)
+node_modules/
+target/
+
+# Build outputs
+dist/
+build/
+out/
+*.hex
+*.bin
+
+# Git and OS metadata
+.git/
+.svn/
+.hg/
+.DS_Store
+Thumbs.db
+
+# Environment and Logs
+.env
+.env.*
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Rust specific
+**/*.rs.bk
+Cargo.lock
+
+# TypeScript specific
+package-lock.json
+yarn.lock

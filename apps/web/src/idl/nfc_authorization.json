@@ -1,0 +1,102 @@
+{
+  "address": "BLAybZY5URNEhMvNGjdvwPPVNpvz7MqeNXC9R4YdL6Wc",
+  "metadata": {
+    "name": "nfc_authorization",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
+  "instructions": [
+    {
+      "name": "authorize_tap",
+      "discriminator": [
+        248,
+        27,
+        106,
+        220,
+        170,
+        126,
+        122,
+        253
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "nonce",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "register_device",
+      "discriminator": [
+        210,
+        151,
+        56,
+        68,
+        22,
+        158,
+        90,
+        193
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "device_id",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "revoke_device",
+      "discriminator": [
+        144,
+        73,
+        80,
+        42,
+        245,
+        168,
+        5,
+        211
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "signer": true
+        }
+      ],
+      "args": []
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "DeviceNotRegistered",
+      "msg": "Device not registered"
+    },
+    {
+      "code": 6001,
+      "name": "InvalidNonce",
+      "msg": "Invalid nonce"
+    }
+  ]
+}

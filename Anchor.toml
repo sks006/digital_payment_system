@@ -1,0 +1,29 @@
+[toolchain]
+anchor_version = "0.32.1"
+solana_version = "2.3.0"
+
+[features]
+resolution = true
+skip-lint = false
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[programs.devnet]
+lending_vault = "2oyU8LCEPCicz6AN2emJw2BTZe8eU73CU5AJGhAEpcZz"
+nfc_authorization = "BLAybZY5URNEhMvNGjdvwPPVNpvz7MqeNXC9R4YdL6Wc"
+
+[programs.localnet]
+lending_vault = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+nfc_authorization = "NFC1111111111111111111111111111111111111111"
+
+[scripts]
+# General test (fixed)
+test = "npx tsx node_modules/mocha/bin/mocha programs/lending_vault/tests/**/*.ts"
+
+# One-time vault initialization
+initialize = "npx tsx node_modules/mocha/bin/mocha programs/lending_vault/tests/initialize.ts"

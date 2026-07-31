@@ -1,0 +1,10 @@
+[workspace]
+resolver = "2"
+members = ["programs/lending_vault", "programs/nfc_authorization"]
+exclude = ["backend"]
+
+[profile.release]
+overflow-checks = true
+opt-level = "s"
+lto = true
+codegen-units = 1

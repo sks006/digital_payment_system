@@ -1,0 +1,9 @@
+{
+  "name": "backend-tunnels",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "cargo run",
+    "tunnel": "npx localtunnel --port 8080 --subdomain digital-payment-system-api",
+    "dev:mobile": "npx concurrently \"npm run dev\" \"npm run tunnel\""
+  }
+}
