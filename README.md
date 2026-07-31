@@ -272,7 +272,6 @@ sequenceDiagram
     actor Customer
     actor Merchant
     participant FE as Frontend (Next.js)
-    participant BE as Backend (Rust Axum)
     participant Chain as Solana Devnet (On-Chain)
 
     Note over Customer, Chain: Flow A: QR Code DeFi Payment (On-Chain Credit Mode)
@@ -287,20 +286,6 @@ sequenceDiagram
     Chain->>Chain: Verify LTV & Health Factor via Pyth, borrow EURC, transfer to Merchant ATA
     Chain-->>FE: Confirm transaction signature
     FE-->>Customer: Display receipt & link to Solana Explorer
-
-    Note over Customer, Chain: Flow B: NFC Card Tap Authorization (Hybrid Auth Flow)
-    Customer->>FE: Initiates NFC Payment / Tap Simulation
-    FE->>BE: GET /nfc/nonce
-    BE-->>FE: Return single-use nonce
-    FE->>FE: Build AuthorizeTap transaction (NFC Auth Program)
-    Customer->>FE: Sign transaction via wallet
-    FE->>FE: Generate Solana transaction signature (tx_signature)
-    FE->>BE: POST /nfc/tap (wallet_address, amount, device_id, nonce, tx_signature, merchant_data)
-    BE->>BE: Verify & consume nonce (Replay protection)
-    BE->>Chain: Query devnet RPC for tx_signature
-    Chain-->>BE: Confirm transaction succeeded on-chain with valid signer
-    BE-->>FE: Return JSON receipt (success = true, receiptId, txHash, newHealthFactor)
-    FE-->>Customer: Display NFC transaction confirmation
 ```
 
 ### 2. Architecture & Component Interaction
@@ -312,22 +297,11 @@ graph TD
         Wallet[Solana Wallet Adapter]
         Sender[Sender UI / QR Scanner]
         MercUI[Merchant Terminal / QR Generator]
-        POS[POS Simulator / Card Swipe]
-        APIClient[API Client / lib/api-client.ts]
-    end
-
-    subgraph Backend [Rust Axum Backend API]
-        direction TB
-        Axum[Axum Router / main.rs]
-        Nonce[Nonce Store / Replay Protection]
-        NFCHandler[NFC Handler / handlers/nfc.rs]
-        SolVerify[Solana Tx Verifier]
     end
 
     subgraph Blockchain [Solana Devnet Blockchain]
         direction TB
         Lending[Lending Vault Program]
-        NFCAuth[NFC Authorization Program]
         Pyth[Pyth Oracles SOL/USD & EUR/USD]
         SPLToken[SPL Token Program / EURC Mint]
     end
@@ -339,20 +313,6 @@ graph TD
     Lending -->|4. Checks Prices| Pyth
     Sender -->|5. Signs & Broadcasts Borrow + Transfer| SPLToken
     SPLToken -->|6. Mints & Transfers EURC| Wallet
-
-    %% NFC Tap Connections
-    POS -->|1. Swipe simulation| APIClient
-    Sender -->|1. Get Nonce| APIClient
-    APIClient -->|2. HTTP GET /nfc/nonce| Axum
-    Axum --> Nonce
-    Sender -->|3. Sign AuthorizeTap| NFCAuth
-    Sender -->|4. Send payload| APIClient
-    APIClient -->|5. HTTP POST /nfc/tap| Axum
-    Axum --> NFCHandler
-    NFCHandler -->|6. Verify Nonce| Nonce
-    NFCHandler -->|7. Verify Tx on Devnet| SolVerify
-    SolVerify -->|8. RPC GetTransaction| ChainRPC((Solana Devnet RPC))
-    ChainRPC -->|9. Verify execution & signer| NFCAuth
 ```
 
 
