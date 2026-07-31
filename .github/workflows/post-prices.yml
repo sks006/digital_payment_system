@@ -16,14 +16,20 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: 'apps/web/package-lock.json'
 
       - name: Install Dependencies
         run: |
           cd apps/web
-          npm ci
+          # Try a strict install first; if the lockfile is inconsistent, fall back to npm install so the job can proceed.
+          if npm ci --loglevel=error; then
+            echo "npm ci succeeded"
+          else
+            echo "npm ci failed — falling back to npm install"
+            npm install --no-audit --no-fund
+          fi
 
       - name: Configure Solana Payer Key
         run: |
