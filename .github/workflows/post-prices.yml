@@ -34,9 +34,9 @@ jobs:
       - name: Run post-prices
         run: |
           cd apps/web
-          node post-prices.mjs
+          npx tsx post-prices.mjs
 
       - name: Run post-eur
         run: |
           cd apps/web
-          node post-eur.mjs
+          npx tsx post-eur.mjs
