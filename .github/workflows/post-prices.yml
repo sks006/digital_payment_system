@@ -23,13 +23,7 @@ jobs:
       - name: Install Dependencies
         run: |
           cd apps/web
-          # Try a strict install first; if the lockfile is inconsistent, fall back to npm install so the job can proceed.
-          if npm ci --loglevel=error; then
-            echo "npm ci succeeded"
-          else
-            echo "npm ci failed — falling back to npm install"
-            npm install --no-audit --no-fund
-          fi
+          npm ci
 
       - name: Configure Solana Payer Key
         run: |
