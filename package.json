@@ -18,6 +18,9 @@
     "url": "https://github.com/sks006/cryptoBridger/issues"
   },
   "homepage": "https://github.com/sks006/cryptoBridger#readme",
+  "workspaces": [
+    "apps/web"
+  ],
   "devDependencies": {
     "@coral-xyz/anchor": "^0.32.1",
     "@solana/spl-token": "^0.4.14",
@@ -36,5 +39,56 @@
     "@tailwindcss/postcss": "^4.2.4",
     "postcss": "^8.5.13",
     "tailwindcss": "^4.2.4"
+  },
+  "overrides": {
+    "@solana/web3.js": "$@solana/web3.js",
+    "digital-payment-system-frontend": {
+      "@solana/web3.js": "$@solana/web3.js",
+      "jito-ts": {
+        "@solana/web3.js": "$@solana/web3.js"
+      },
+      "@pythnetwork/solana-utils": {
+        "@solana/web3.js": "$@solana/web3.js",
+        "jito-ts": {
+          "@solana/web3.js": "$@solana/web3.js"
+        }
+      },
+      "@pythnetwork/pyth-solana-receiver": {
+        "@solana/web3.js": "$@solana/web3.js",
+        "jito-ts": {
+          "@solana/web3.js": "$@solana/web3.js"
+        },
+        "@pythnetwork/solana-utils": {
+          "@solana/web3.js": "$@solana/web3.js",
+          "jito-ts": {
+            "@solana/web3.js": "$@solana/web3.js"
+          }
+        }
+      }
+    },
+    "@pythnetwork/solana-utils": {
+      "@solana/web3.js": "$@solana/web3.js",
+      "jito-ts": {
+        "@solana/web3.js": "$@solana/web3.js"
+      }
+    },
+    "@pythnetwork/pyth-solana-receiver": {
+      "@solana/web3.js": "$@solana/web3.js",
+      "jito-ts": {
+        "@solana/web3.js": "$@solana/web3.js"
+      },
+      "@pythnetwork/solana-utils": {
+        "@solana/web3.js": "$@solana/web3.js",
+        "jito-ts": {
+          "@solana/web3.js": "$@solana/web3.js"
+        }
+      }
+    },
+    "jito-ts": {
+      "@solana/web3.js": "$@solana/web3.js"
+    },
+    "uuid": "^9.0.1",
+    "protobufjs": "^7.2.5",
+    "lodash": "^4.17.21"
   }
 }
