@@ -51,7 +51,7 @@ const SHARD_ID = 0;
   );
   console.log("Expected EUR/USD account:", eurUsdAccount.toBase58());
 
-  // Fetch the latest EUR/USD price-update binary blob from Hermes.
+  // Fetch the latest EUR/USD price-update binary blob from Hermes
   console.log("Fetching latest EUR/USD update from Hermes...");
   const url = `https://hermes.pyth.network/v2/updates/price/latest?ids[]=${EUR_USD_FEED_ID}&encoding=base64`;
   const res = await fetch(url);
