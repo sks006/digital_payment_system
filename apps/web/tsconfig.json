@@ -6,7 +6,6 @@
       "dom.iterable",
       "esnext"
     ],
-    "types": ["w3c-web-nfc"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
