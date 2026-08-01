@@ -37,58 +37,15 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.4",
-    "postcss": "^8.5.13",
+    "postcss": "^8.5.25",
     "tailwindcss": "^4.2.4"
   },
-  "overrides": {
-    "@solana/web3.js": "$@solana/web3.js",
-    "digital-payment-system-frontend": {
-      "@solana/web3.js": "$@solana/web3.js",
-      "jito-ts": {
-        "@solana/web3.js": "$@solana/web3.js"
-      },
-      "@pythnetwork/solana-utils": {
-        "@solana/web3.js": "$@solana/web3.js",
-        "jito-ts": {
-          "@solana/web3.js": "$@solana/web3.js"
-        }
-      },
-      "@pythnetwork/pyth-solana-receiver": {
-        "@solana/web3.js": "$@solana/web3.js",
-        "jito-ts": {
-          "@solana/web3.js": "$@solana/web3.js"
-        },
-        "@pythnetwork/solana-utils": {
-          "@solana/web3.js": "$@solana/web3.js",
-          "jito-ts": {
-            "@solana/web3.js": "$@solana/web3.js"
-          }
-        }
-      }
-    },
-    "@pythnetwork/solana-utils": {
-      "@solana/web3.js": "$@solana/web3.js",
-      "jito-ts": {
-        "@solana/web3.js": "$@solana/web3.js"
-      }
-    },
-    "@pythnetwork/pyth-solana-receiver": {
-      "@solana/web3.js": "$@solana/web3.js",
-      "jito-ts": {
-        "@solana/web3.js": "$@solana/web3.js"
-      },
-      "@pythnetwork/solana-utils": {
-        "@solana/web3.js": "$@solana/web3.js",
-        "jito-ts": {
-          "@solana/web3.js": "$@solana/web3.js"
-        }
-      }
-    },
-    "jito-ts": {
-      "@solana/web3.js": "$@solana/web3.js"
-    },
-    "uuid": "^9.0.1",
-    "protobufjs": "^7.2.5",
-    "lodash": "^4.17.21"
-  }
+"overrides": {
+  "postcss": "^8.5.25",
+  "sharp": "^0.35.3",
+  "@solana/web3.js": "^1.98.4",
+  "uuid": "^9.0.1",
+  "protobufjs": "^7.2.5",
+  "lodash": "^4.17.21"
+}
 }
