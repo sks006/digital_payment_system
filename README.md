@@ -1,332 +1,187 @@
-# Digital_payment_system
+# Digital Payment System
 
+A revolutionary digital payment system that lets you spend your crypto without selling it. Built on Solana with Anchor smart contracts, it enables credit-mode spending using SOL as collateral, real-time Pyth oracle risk calculations, and hybrid cryptographic NFC tap payments.
 
-A revolutionary digital payment system that lets you spend your crypto without selling it. Built on Solana with Anchor smart contracts,  enables credit mode spending, 2% cashback rewards, and daily interest on collateral.
+---
 
 ## 🚀 Features
 
 ### Core Functionality
+- **Credit & Debit Mode**: Use SOL as collateral to fund a credit line in EURC/USDC or spend directly.
+- **Pyth Oracle Integration**: Real-time asset valuation (SOL/USD and EUR/USD) to dynamically calculate account loan-to-value (LTV) ratios and health factors.
+- **Contactless NFC/QR Payments**: Integrated Web-NFC interfaces and fallback mock simulations for processing payments at a merchant terminal.
+- **DeFi Swaps**: Best-rate swaps powered by the Jupiter DEX aggregator.
 
-- **Credit & Debit Mode**: Switch between direct crypto spending or using crypto as collateral for a credit line
-- **2% Cashback Rewards**: Earn up to 2% cashback in crypto on every purchase in Credit Mode
-- **Daily Interest**: Unspent collateral earns interest 24/7
-- **Non-Custodial Security**: Your keys, your crypto — backed by Anchor smart contracts
-- **Global Acceptance**: Accepted at 100M+ merchants worldwide with Apple Pay & Google Pay support
-- **Instant Swaps**: Best-rate token swaps powered by Jupiter DEX aggregator
-
-### Technical Highlights
-
-- **Solana Integration**: High-speed, low-cost transactions
-- **Real-time Liquidation Protection**: Automated risk management
-- **Multi-token Support**: Deposit SOL and other supported tokens as collateral
-- **POS Simulator**: Test card transactions in a simulated environment
-
-## 🛠 Tech Stack
-
-### Frontend
-
-- **Next.js 16** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first styling
-- **Radix UI** - Accessible component primitives
-- **Lucide React** - Icon library
-
-### Backend
-
-- **Rust** - High-performance systems programming
-- **Actix Web** (assumed) - Web framework for API services
-
-### Blockchain
-
-- **Solana** - High-performance blockchain
-- **Anchor Framework** - Solana smart contract development
-- **Jupiter** - DEX aggregator for token swaps
-
-### Infrastructure
-
-- **Docker** - Containerization
-- **Kubernetes** - Orchestration
-- **Terraform** - Infrastructure as Code
-
-## 📋 Prerequisites
-
-- Node.js 18+
-- Rust 1.70+
-- Solana CLI tools
-- Anchor CLI
-- Docker & Docker Compose
-
-## 🚀 Getting Started
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/sks006/cryptoBridger.git
-cd cryptoBridger
-```
-
-### 2. Setup Web Application
-
-```bash
-cd apps/web
-npm install
-npm run dev
-```
-
-The web app will be available at `http://localhost:3000`
-
-### 3. Setup Backend
-
-```bash
-cd backend
-cargo build
-cargo run
-```
-
-### 4. Setup Solana Program
-
-```bash
-cd programs/lending_vault
-anchor build
-anchor deploy
-```
-
-### 5. Environment Configuration
-
-Create `.env.local` in `apps/web` with:
-
-```
-NEXT_PUBLIC_SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
-NEXT_PUBLIC_JUPITER_API_URL=https://quote-api.jup.ag/v4
-```
-
-## 📖 Usage
-
-### For Users
-
-1. Connect your Solana wallet
-2. Deposit collateral (SOL or supported tokens)
-3. Activate your virtual crypto to a flat Card
-4. Start spending and earning rewards
-
-### For Developers
-
-- **Development**: `npm run dev` in web app
-- **Building**: `npm run build`
-- **Testing**: Run tests in respective directories
-- **POS Simulation**: Visit `/pos-simulator` to test card transactions
-
-## 🏗 Architecture
-
-```
-crypto-fiat-card-mvp/
-
-├── apps/
-│   ├── web/                          # Your existing Next.js frontend (kept mostly unchanged)
-│   │   ├── src/
-│   │   │   ├── app/
-│   │   │   │   ├── lamyt.tsx
-│   │   │   │   ├── page.tsx                  # landing + connect wallet
-│   │   │   │   ├── dashboard/
-│   │   │   │   │   ├── page.tsx
-│   │   │   │   │   └── transactions.tsx
-│   │   │   │   ├── card/
-│   │   │   │   │   ├── page.tsx
-│   │   │   │   │   └── topup.tsx
-│   │   │   │   ├── swap/
-│   │   │   │   │   └── simulate.tsx
-│   │   │   │   ├── pos-simulator/
-│   │   │   │   │   └── page.tsx
-│   │   │   │   └── nfc/                      # NEW for web
-│   │   │   │       └── tap/page.tsx          # Web NFC demo page
-│   │   │   ├── components/
-│   │   │   │   ├── WalletConnect.tsx
-│   │   │   │   ├── HealthFactorMeter.tsx
-│   │   │   │   ├── CardBalance.tsx
-│   │   │   │   ├── NFCRingAnimation.tsx
-│   │   │   │   └── NFCTapButton.tsx          # NEW: Simulate / Real Web NFC button
-│   │   │   ├── lib/
-│   │   │   │   ├── solana.ts
-│   │   │   │   ├── jupiter.ts
-│   │   │   │   ├── anchor-client.ts
-│   │   │   │   ├── api-client.ts
-│   │   │   │   └── nfc/
-│   │   │   │       ├── web-nfc.ts            # Web NFC API
-│   │   │   │       └── mock-nfc.ts           # Fallback simulation
-│   │   │   └── hooks/
-│   │   │       ├── useHealthFactor.ts
-│   │   │       ├── useCardBalance.ts
-│   │   │       └── useNFCTap.ts              # Unified hook (Web + Mock)
-│   │   ├── public/
-│   │   ├── next.config.js
-│   │   ├── tailwind.config.ts
-│   │   └── package.json
-│   │
-│   └── mobile/                              # ✦ NEW — simplified RN app
-│       ├── src/
-│       │   ├── app/
-│       │   │   ├── index.tsx               # wallet connect entry
-│       │   │   ├── dashboard/
-│       │   │   │   └── screen.tsx
-│       │   │   ├── card/
-│       │   │   │   └── screen.tsx
-│       │   │   └── nfc/
-│       │   │       ├── TapScreen.tsx       # ✦ NFC tap UI (mock)
-│       │   │       └── MockProvision.tsx   # ✦ simulated card-to-wallet flow
-│       │   ├── components/
-│       │   │   ├── WalletConnect.tsx
-│       │   │   ├── CardBalance.tsx
-│       │   │   └── NFCRingAnimation.tsx    # ✦ simple tap pulse
-│       │   └── lib/
-│       │       ├── solana.ts
-│       │       ├── jupiter.ts
-│       │       ├── anchor-client.ts
-│       │       ├── api-client.ts
-│       │       └── nfc/
-│       │           ├── nfc-manager.ts      # ✦ react-native-nfc-manager wrapper
-│       │           └── mock-hce.ts         # ✦ Android HCE stub (logs APDU)
-│       ├── android/
-│       │   └── app/src/main/
-│       │       ├── AndroidManifest.xml     # ✦ NFC + HCE permissions
-│       │       └── java/.../
-│       │           └── HCEService.java     # ✦ stub HostApduService
-│       ├── ios/
-│       │   └── CryptoCardMVP/
-│       │       └── Info.plist              # ✦ NFCReaderUsageDescription
-│       ├── package.json
-│       ├── metro.config.js
-│       └── app.json
-│
-├── programs/
-|   ├── lending-vault/                      Your existing fixed lending protocol —
-|   │   ├── src/
-|   │   │   ├── lib.rs
-|   │   │   ├── instructions/
-|   │   │   │   ├── deposit.rs
-|   │   │   │   ├── withdraw.rs
-|   │   │   │   ├── borrow.rs                  # reads Pyth price feed
-|   │   │   │   ├── repay.rs
-|   │   │   │   └── liquidate.rs               # reads Pyth price feed
-|   │   │   ├── state/
-|   │   │   │   ├── vault.rs                   # includes price_feed Pubkey
-|   │   │   │   └── user_position.rs
-|   │   │   └── error.rs
-|   │   ├── Anchor.toml
-|   │   └── Cargo.toml                         # + pyth-sdk-solana
-│
-├── backend/
-│   ├── src/
-│   │   ├── main.rs
-│   │   ├── handlers/
-│   │   │   ├── health.rs
-│   │   │   ├── auth.rs
-│   │   │   ├── card.rs
-│   │   │   ├── swipe.rs
-│   │   │   └── nfc.rs                      # ✦ NEW
-│   │   │       # POST /nfc/tap  → mock JIT, returns receipt JSON
-│   │   │       # POST /nfc/provision → returns mock token { pan_token, exp }
-│   │   ├── solana/
-│   │   │   ├── client.rs
-│   │   │   ├── vault_ix.rs
-│   │   │   └── jupiter_quote.rs
-│   │   ├── state/
-│   │   │   ├── memory_store.rs             # HashMap<UserId, Session>
-│   │   │   └── nfc_store.rs                # ✦ HashMap<DeviceId, MockToken>
-│   │   └── utils/
-│   │       ├── ltv.rs
-│   │       └── nfc_nonce.rs                # ✦ one-time nonce gen (in-memory)
-│   ├── Cargo.toml
-│   └── .env
-│
-├── docs/
-│   └── whitepaper/
-│       ├── MiCA_summary.md
-│       └── nfc_flow_notes.md               # ✦ APDU tap → mock JIT diagram
-│
-├── scripts/
-│   ├── deploy-program.sh
-│   ├── seed-mock-users.sh
-│   └── simulate-nfc-tap.sh                 # ✦ curl POST /nfc/tap shortcut
-│
-├── tests/
-│   └── e2e/
-│       ├── swipe.test.ts
-│       └── nfc_tap.test.ts                 # ✦ Detox NFC mock tap test
-│
-├── HACKATHON_README.md
-└── .gitignore
-```
-
-
-## 🔄 Data Flow Diagrams
-
-The platform supports two core payment mechanisms:
-1. **On-Chain QR Code Payments**: Direct borrower-to-merchant payment using SOL as collateral.
-2. **Hybrid NFC Tap Payments**: Off-chain card swipe and tap simulation secured by on-chain cryptographic authorization.
-
-### 1. Sequence Diagram: Payment Flows
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Customer
-    actor Merchant
-    participant FE as Frontend (Next.js)
-    participant Chain as Solana Devnet (On-Chain)
-
-    Note over Customer, Chain: Flow A: QR Code DeFi Payment (On-Chain Credit Mode)
-    Merchant->>FE: Input name & amount (EURC)
-    FE->>FE: Generate QR Code (includes invoice, recipient, amount, timestamp)
-    Customer->>FE: Scan QR code with camera
-    FE->>Chain: Query current lending position & Pyth price feeds
-    Chain-->>FE: Return collateral balance & health factor
-    FE->>FE: Build atomic transaction (Borrow EURC + Transfer to Merchant)
-    Customer->>FE: Approve & sign transaction via Phantom Wallet
-    FE->>Chain: Broadcast signed transaction
-    Chain->>Chain: Verify LTV & Health Factor via Pyth, borrow EURC, transfer to Merchant ATA
-    Chain-->>FE: Confirm transaction signature
-    FE-->>Customer: Display receipt & link to Solana Explorer
-```
-
-### 2. Architecture & Component Interaction
-
-```mermaid
-graph TD
-    subgraph Frontend [Next.js Web Application]
-        direction TB
-        Wallet[Solana Wallet Adapter]
-        Sender[Sender UI / QR Scanner]
-        MercUI[Merchant Terminal / QR Generator]
-    end
-
-    subgraph Blockchain [Solana Devnet Blockchain]
-        direction TB
-        Lending[Lending Vault Program]
-        Pyth[Pyth Oracles SOL/USD & EUR/USD]
-        SPLToken[SPL Token Program / EURC Mint]
-    end
-
-    %% QR Pay Connections
-    MercUI -->|1. Encodes payload| QR[QR Code]
-    Sender -->|2. Scans & Decodes| QR
-    Sender -->|3. Fetches Position| Lending
-    Lending -->|4. Checks Prices| Pyth
-    Sender -->|5. Signs & Broadcasts Borrow + Transfer| SPLToken
-    SPLToken -->|6. Mints & Transfers EURC| Wallet
-```
-
-
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-
-
-## ⚠️ Disclaimer
-
-This is an MVP (Minimum Viable Product) and is for demonstration purposes. Not intended for production use without further development and security audits.
+### Engineering Highlights
+- **Unified Monorepo**: Built using npm workspaces for deterministic dependency resolution and workspace-aware executions.
+- **Global Security Overrides**: Advanced version overrides at the root `package.json` to mitigate critical vulnerabilities (`postcss`, `sharp`) while preserving Solana v1 ecosystem libraries.
+- **Rust Axum Backend Relayer**: High-performance Rust Axum service managing secure session nonces and broadcasting verified transactions.
+- **Automated Keep-Alive Oracle**: GitHub Actions workflow updating Pyth price feed mock accounts on devnet.
 
 ---
 
-_Built with ❤️ on Solana_
+## 🛠 Tech Stack
+
+### Frontend & Apps
+- **Next.js 16 (Turbopack)** — React Framework with App Router
+- **TypeScript** — Strongly typed application logic
+- **Vanilla CSS** — Custom styling tokens
+
+### Backend Service
+- **Rust (Axum)** — Lightweight, high-concurrency web framework
+- **Anchor Client** — Program interaction client
+
+### Smart Contracts (Solana Devnet)
+- **Anchor Framework** — Smart contract lifecycle management
+- **Programs**:
+  - `programs/lending_vault`: Handles collateral locks, borrows, and liquidations.
+  - `programs/nfc_authorization`: Manages registered POS devices and tap authorizations.
+
+---
+
+## 📂 Project Architecture
+
+```
+digital_payment_system/
+├── apps/
+│   └── web/                   # Next.js Frontend
+│       ├── src/
+│       │   ├── app/           # App router pages (dashboard, card, pos-simulator, qr-pay)
+│       │   ├── components/    # Reusable UI components
+│       │   ├── hooks/         # React hooks (useHealthFactor, useCardBalance)
+│       │   └── lib/           # Unified libraries (web-nfc, anchor-client, pyth-feeds)
+│       ├── package.json
+│       └── next.config.ts
+├── backend/                   # Rust Axum Web Service
+│   ├── src/
+│   │   ├── main.rs            # Entry point & Axum router
+│   │   ├── handlers/          # NFC, Card, and Auth route handlers
+│   │   └── state/             # Nonce and token stores
+│   └── Cargo.toml
+├── programs/                  # On-Chain Anchor Programs
+│   ├── lending_vault/
+│   └── nfc_authorization/
+├── .github/workflows/         # CI/CD Workflows
+├── package.json               # Monorepo Workspaces & Overrides
+└── README.md
+```
+
+---
+
+## 🏗 Data Flow & Architecture
+
+### 1. Hybrid NFC Payment Sequence
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Customer as Customer Wallet
+    participant POS as POS Simulator
+    participant API as Rust Backend Relayer
+    participant Solana as Solana Ledger (Devnet)
+    
+    POS->>API: 1. POST /nfc/provision (Provision terminal)
+    API-->>POS: Returns Provisioning Success
+    
+    Note over Customer, POS: Customer taps card or scans QR code
+    POS->>API: 2. GET /nfc/nonce (Request unique session nonce)
+    API-->>POS: Returns Nonce & Expiry
+    
+    Customer->>POS: 3. Signs payment request with private key
+    POS->>API: 4. POST /nfc/tap (Submit signature + payload)
+    
+    Note over API: Relayer decrypts payload, verifies nonce, & validates signature
+    API->>Solana: 5. Submit Transaction (Anchor nfc_authorization)
+    Solana-->>API: Tx Confirmation Signature
+    API-->>POS: 6. Returns Payment Status (Confirmed/Failed)
+```
+
+### 2. On-Chain Component Architecture
+```mermaid
+graph TD
+    subgraph Frontend [Next.js Web Application]
+        Wallet[Solana Wallet Adapter]
+        Sender[QR Code Scanner / Payment UI]
+        POSSim[POS Simulator Terminal]
+    end
+
+    subgraph Relayer [Rust Backend Service]
+        Axum[Axum Server]
+        State[In-Memory Session Store]
+    end
+
+    subgraph Blockchain [Solana Devnet]
+        Lending[Lending Vault Program]
+        NFCAuth[NFC Authorization Program]
+        Pyth[Pyth Oracles SOL/USD & EUR/USD]
+    end
+
+    %% Flow lines
+    POSSim -->|Request nonce / submit tap| Axum
+    Axum -->|Write state & sweep| State
+    Axum -->|Send Tx| NFCAuth
+    Sender -->|Deposit Collateral| Lending
+    Lending -->|LTV valuation| Pyth
+    Wallet -->|Direct sign| Sender
+```
+
+---
+
+## 🚀 Getting Started
+
+### 📋 Prerequisites
+- **Node.js**: `24`
+- **Rust**: `stable` (via `rustup`)
+- **Solana CLI**: `1.18+`
+- **Anchor CLI**: `0.29+`
+
+### 1. Setup & Installation
+Clone the repository and install the workspace dependencies from the root directory:
+```bash
+# Clean install monorepo dependencies
+npm ci
+```
+
+### 2. Run the Next.js Frontend
+```bash
+# Navigate to the frontend directory
+cd apps/web
+
+# Start Next.js development server with Turbopack
+npm run dev
+```
+*The app will be available locally at `http://localhost:3000`.*
+
+### 3. Run the Rust Backend
+```bash
+# Navigate to the backend directory
+cd backend
+
+# Build and start the server
+cargo run --release
+```
+*The server will start listening on `http://localhost:8080`.*
+
+---
+
+## 🌐 Deployments & Configuration
+
+### Environment Variables (`apps/web/.env`)
+Create an `.env` file inside `apps/web/` to define your deployment environment:
+```env
+NEXT_PUBLIC_LENDING_PROGRAM_ID=2oyU8LCEPCicz6AN2emJw2BTZe8eU73CU5AJGhAEpcZz
+NEXT_PUBLIC_NFC_PROGRAM_ID=BLAybZY5URNEhMvNGjdvwPPVNpvz7MqeNXC9R4YdL6Wc
+NEXT_PUBLIC_WSOL_MINT=So11111111111111111111111111111111111111112
+NEXT_PUBLIC_SOLANA_RPC=https://api.devnet.solana.com
+NEXT_PUBLIC_BACKEND_URL=https://digital-payment-system-qtco.onrender.com
+NEXT_PUBLIC_APP_URL=https://digital-payment-system.vercel.app
+NEXT_PUBLIC_APP_NAME=Digital Payment System
+```
+
+### Active Live URLs
+- **Frontend (Vercel)**: `https://digital-payment-system.vercel.app`
+- **Backend Relayer (Render)**: `https://digital-payment-system-qtco.onrender.com`
+
+---
+
+## ⚠️ Disclaimer
+This codebase is an MVP created for demonstration and testing purposes. It is not audited or recommended for production use without further security audits.
