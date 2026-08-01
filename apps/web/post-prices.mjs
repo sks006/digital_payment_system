@@ -1,5 +1,5 @@
 // post-prices.mjs — pushes fresh SOL/USD and EUR/USD PriceUpdateV2 to devnet.
-//
+
 // Run with: npx tsx post-prices.mjs
 
 import {
