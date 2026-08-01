@@ -17,12 +17,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: 'apps/web/package-lock.json'
 
-      - name: Install Dependencies
+      - name: Install Dependencies (auto-detect)
         working-directory: apps/web
-        run: npm ci
+        run: |
+          set -e
+          cd apps/web
+          if [ -f yarn.lock ]; then
+            echo "Detected yarn.lock — using yarn"
+            corepack enable
+            corepack prepare yarn@stable --activate
+            yarn install --frozen-lockfile
+          elif [ -f package-lock.json ]; then
+            echo "Detected package-lock.json — using npm ci"
+            npm ci
+          else
+            echo "No lockfile found — running npm install"
+            npm install
+          fi
 
       - name: Configure Solana Payer Key
         run: |
