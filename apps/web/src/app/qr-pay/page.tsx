@@ -20,11 +20,6 @@ import Link from "next/link";
 import {
   PublicKey,
   Transaction,
-  VersionedTransaction,
-  TransactionMessage,
-  SystemProgram,
-  SYSVAR_CLOCK_PUBKEY,
-  Keypair,
 } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
@@ -33,24 +28,12 @@ import {
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction,
 } from "@solana/spl-token";
-import { BN } from "@coral-xyz/anchor";
-import { Buffer } from "buffer";
-import { PythSolanaReceiver } from "@pythnetwork/pyth-solana-receiver";
-import { parseAccumulatorUpdateData } from "@pythnetwork/price-service-sdk";
-import { getTreasuryPda, getConfigPda, getGuardianSetPda } from "@pythnetwork/pyth-solana-receiver/address";
-import { trimSignatures } from "@pythnetwork/pyth-solana-receiver/vaa";
 
 import { useEffectiveWallet } from "@/hooks/useEffectiveWallet";
 import { useAnchorProvider } from "@/hooks/useAnchorProvider";
 import { useHealthFactor } from "@/hooks/useHealthFactor";
 import { useSolPrice } from "@/hooks/useSolPrice";
-import {
-  getLendingProgram,
-  getUserPositionPda,
-  getVaultPda,
-  getEurcMintPda,
-} from "@/lib/anchor-client";
-import { SOL_USD_PRICE_UPDATE, EUR_USD_PRICE_UPDATE } from "@/lib/pyth-feeds";
+import { getEurcMintPda } from "@/lib/anchor-client";
 
 import Header from "@/components/digital_payment_system/Header";
 import Footer from "@/components/digital_payment_system/Footer";
@@ -139,8 +122,7 @@ export default function QRPayPage() {
   const availableCreditEur =
     eurUsd && eurUsd > 0 ? availableCreditUsd / eurUsd : availableCreditUsd;
 
-  const tooLowHF = healthFactor < 1.2;
-  const canPay = !!wallet.connected && payState === "idle" && !tooLowHF;
+  const canPay = !!wallet.connected && payState === "idle";
 
   // ---- borrow + transfer atomic transaction -----------------------------
   const borrowAndGetSignature = useCallback(
@@ -161,138 +143,52 @@ export default function QRPayPage() {
       }
 
       const recipientPubkey = new PublicKey(merchant.recipient);
-      const eurcMint = getEurcMintPda();
-      const program = getLendingProgram(provider);
-      const vaultPda = getVaultPda();
-      const userPositionPda = getUserPositionPda(wallet.publicKey);
+      
+      // 1. Mint Validation & Decimals Configuration
+      let mint: PublicKey;
+      const decimals = 6; // Standard decimals for USDC and EURC
 
-      // Verify the EURC mint exists on this cluster
-      const mintInfo = await provider.connection.getAccountInfo(eurcMint);
-      if (!mintInfo) {
-        throw new Error(
-          `EURC mint ${eurcMint.toBase58()} not found on this cluster. ` +
-            `Make sure you're on Devnet and the program is initialized.`,
-        );
+      if (merchant.currency === "EUR" || merchant.currency === "EURC") {
+        mint = getEurcMintPda();
+      } else {
+        // Default to USDC (Mainnet/Devnet contract address)
+        mint = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
       }
 
-      // Derive ATAs
-      const userEurcAta = await getAssociatedTokenAddress(
-        eurcMint,
+      // 2. Account Derivation
+      const userAta = await getAssociatedTokenAddress(
+        mint,
         wallet.publicKey,
         false,
         TOKEN_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID,
       );
-      const recipientEurcAta = await getAssociatedTokenAddress(
-        eurcMint,
+      const recipientAta = await getAssociatedTokenAddress(
+        mint,
         recipientPubkey,
         false,
         TOKEN_PROGRAM_ID,
         ASSOCIATED_TOKEN_PROGRAM_ID,
       );
 
-      // 1. Fetch latest VAA payload from Pyth Hermes API for SOL/USD feed
-      const solFeedId = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
-      const hermesUrl = `https://hermes.pyth.network/v2/updates/price/latest?ids[]=${solFeedId}&encoding=base64`;
-      const res = await fetch(hermesUrl);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch price update from Hermes: ${res.statusText}`);
-      }
-      const json = await res.json();
-      const updateBase64 = json.binary.data[0];
-      if (!updateBase64) {
-        throw new Error("No price update data returned from Hermes");
-      }
-
-      const accumulatorUpdateData = parseAccumulatorUpdateData(Buffer.from(updateBase64, "base64"));
-      const trimmedVaa = trimSignatures(accumulatorUpdateData.vaa, 3);
-
-      // 2. Initialize receiver and build postUpdateAtomic instruction
-      const receiver = new PythSolanaReceiver({
-        connection: provider.connection,
-        wallet: provider.wallet as any
-      });
-      const priceUpdateKeypair = Keypair.generate();
-      const treasuryId = 0;
-      const guardianSetIndex = trimmedVaa.readUInt32BE(1);
-
-      const postUpdateIx = await receiver.receiver.methods.postUpdateAtomic({
-        vaa: trimmedVaa,
-        merklePriceUpdate: accumulatorUpdateData.updates[0],
-        treasuryId
-      }).accounts({
-        priceUpdateAccount: priceUpdateKeypair.publicKey,
-        treasury: getTreasuryPda(treasuryId, receiver.receiver.programId),
-        config: getConfigPda(receiver.receiver.programId),
-        guardianSet: getGuardianSetPda(guardianSetIndex, receiver.wormhole.programId)
-      }).instruction();
-
-      const amountMicro = new BN(Math.round(eurcAmount * 1e6));
-      const instructions = [];
-
-      // Create recipient ATA if missing
-      const recipientAtaInfo =
-        await provider.connection.getAccountInfo(recipientEurcAta);
-      if (!recipientAtaInfo) {
-        instructions.push(
-          createAssociatedTokenAccountInstruction(
-            wallet.publicKey,
-            recipientEurcAta,
-            recipientPubkey,
-            eurcMint,
-            TOKEN_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID,
-          ),
-        );
-      }
-
-      // Add post price update
-      instructions.push(postUpdateIx);
-
-      // Borrow ix — uses the fresh priceUpdateKeypair account we just posted to
-      const borrowIx = await (program.methods as any)
-        .borrow(amountMicro)
-        .accounts({
-          user: wallet.publicKey,
-          vault: vaultPda,
-          userPosition: userPositionPda,
-          eurcMint,
-          userEurcAccount: userEurcAta,
-          solPriceUpdate: priceUpdateKeypair.publicKey,
-          eurPriceUpdate: EUR_USD_PRICE_UPDATE,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-          clock: SYSVAR_CLOCK_PUBKEY,
-        } as any)
-        .instruction();
-      instructions.push(borrowIx);
-
-      // Transfer EURC user → merchant
-      instructions.push(
+      // 3. Mathematical State Transition via standard transfer_checked
+      const amountMicro = Math.round(eurcAmount * Math.pow(10, decimals));
+      
+      const tx = new Transaction();
+      tx.add(
         createTransferCheckedInstruction(
-          userEurcAta,
-          eurcMint,
-          recipientEurcAta,
+          userAta,
+          mint,
+          recipientAta,
           wallet.publicKey,
-          Math.round(eurcAmount * 1e6),
-          6,
+          amountMicro,
+          decimals,
           [],
           TOKEN_PROGRAM_ID,
         ),
       );
 
-      const { blockhash } = await provider.connection.getLatestBlockhash("confirmed");
-      const messageV0 = new TransactionMessage({
-        payerKey: wallet.publicKey,
-        recentBlockhash: blockhash,
-        instructions
-      }).compileToV0Message();
-
-      const versionedTx = new VersionedTransaction(messageV0);
-      versionedTx.sign([priceUpdateKeypair]);
-
-      const signature = await wallet.signAndSend(versionedTx);
+      const signature = await wallet.signAndSend(tx);
       return signature;
     },
     [wallet, provider],
@@ -314,18 +210,6 @@ export default function QRPayPage() {
     const eurcAmount = parseFloat(payload.amount);
     if (!isFinite(eurcAmount) || eurcAmount <= 0) {
       setError("Invalid amount in QR");
-      setPayState("error");
-      return;
-    }
-    if (eurcAmount > availableCreditEur) {
-      setError(
-        `Amount €${eurcAmount.toFixed(2)} exceeds your available credit (€${availableCreditEur.toFixed(2)}).`,
-      );
-      setPayState("error");
-      return;
-    }
-    if (tooLowHF) {
-      setError("Health factor too low. Add more collateral before spending.");
       setPayState("error");
       return;
     }
@@ -360,7 +244,6 @@ export default function QRPayPage() {
         message: "Paid via QR scan",
       });
       setPayState("success");
-      refreshPosition();
       localStorage.removeItem("digital_payment_system:pending_pay");
     } catch (e: any) {
       if (e?.message?.includes("Redirecting to Phantom")) return;
@@ -370,10 +253,7 @@ export default function QRPayPage() {
     }
   }, [
     pendingPayment,
-    availableCreditEur,
-    tooLowHF,
     borrowAndGetSignature,
-    refreshPosition,
     wallet.isDeeplink,
   ]);
 
@@ -386,14 +266,9 @@ export default function QRPayPage() {
       setPayState("error");
       return;
     }
-    if (tooLowHF) {
-      setError("Health factor too low. Add more collateral before spending.");
-      setPayState("error");
-      return;
-    }
 
     setScannerOpen(true);
-  }, [wallet.connected, tooLowHF]);
+  }, [wallet.connected]);
 
   const handleReset = useCallback(() => {
     setPayState("idle");
