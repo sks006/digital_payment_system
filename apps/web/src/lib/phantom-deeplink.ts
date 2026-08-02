@@ -31,7 +31,7 @@
 
 import nacl from "tweetnacl";
 import bs58 from "bs58";
-import { PublicKey, Transaction, Connection } from "@solana/web3.js";
+import { PublicKey, Transaction, VersionedTransaction, Connection } from "@solana/web3.js";
 
 // -----------------------------------------------------------------------------
 // localStorage keys.
@@ -299,7 +299,7 @@ export function handleConnectResponse(): {
  *   7. Caller's redirect handler decrypts and broadcasts (handleSignResponse).
  */
 export async function signViaPhantom(
-  tx: Transaction,
+  tx: Transaction | VersionedTransaction,
   connection: Connection,
   redirectPath: string,
 ): Promise<void> {
@@ -308,23 +308,30 @@ export async function signViaPhantom(
     throw new Error("Not connected to Phantom. Connect first.");
   }
 
-  // Phantom needs a blockhash to know the tx is recent.
-  // We fetch JIT (just-in-time) right before signing — Solana blockhashes
-  // expire after ~60 seconds, so we want a fresh one.
-  if (!tx.recentBlockhash) {
-    const { blockhash } = await connection.getLatestBlockhash("confirmed");
-    tx.recentBlockhash = blockhash;
-  }
-  // Solana requires every tx to have a fee payer. The user pays.
-  if (!tx.feePayer) tx.feePayer = userPubkey;
+  let serialized: Uint8Array;
 
-  // Serialize the unsigned tx. Critical flags:
-  //   requireAllSignatures: false — tx isn't signed yet, that's Phantom's job.
-  //   verifySignatures: false     — same reason.
-  const serialized = tx.serialize({
-    requireAllSignatures: false,
-    verifySignatures: false,
-  });
+  if (tx instanceof Transaction) {
+    // Phantom needs a blockhash to know the tx is recent.
+    // We fetch JIT (just-in-time) right before signing — Solana blockhashes
+    // expire after ~60 seconds, so we want a fresh one.
+    if (!tx.recentBlockhash) {
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
+      tx.recentBlockhash = blockhash;
+    }
+    // Solana requires every tx to have a fee payer. The user pays.
+    if (!tx.feePayer) tx.feePayer = userPubkey;
+
+    // Serialize the unsigned tx. Critical flags:
+    //   requireAllSignatures: false — tx isn't signed yet, that's Phantom's job.
+    //   verifySignatures: false     — same reason.
+    serialized = tx.serialize({
+      requireAllSignatures: false,
+      verifySignatures: false,
+    });
+  } else {
+    // For VersionedTransaction, blockhash and fee payer are compiled in.
+    serialized = tx.serialize();
+  }
 
   // Build the payload Phantom expects:
   //   session: their token, proves we're an authorized dapp.

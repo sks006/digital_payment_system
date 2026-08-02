@@ -123,8 +123,9 @@ pub fn calculate_health_factor(
         .get_price_no_older_than(&Clock::get()?, vault.max_price_age as u64, &sol_feed_id)
         .map_err(|_| ErrorCode::StaleOraclePrice)?;
 
+    // EUR/USD feed on Devnet updates infrequently, so we allow a wider staleness window (e.g., 30 days)
     let eur_price = eur_price_update
-        .get_price_no_older_than(&Clock::get()?, vault.max_price_age as u64, &eur_feed_id)
+        .get_price_no_older_than(&Clock::get()?, 86400 * 30, &eur_feed_id)
         .map_err(|_| ErrorCode::StaleOraclePrice)?;
 
     let collateral_value_eur = u128

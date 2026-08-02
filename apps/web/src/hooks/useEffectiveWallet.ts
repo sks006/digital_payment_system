@@ -23,7 +23,7 @@
 
 import { useMemo } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
-import { Transaction, PublicKey } from "@solana/web3.js";
+import { Transaction, VersionedTransaction, PublicKey } from "@solana/web3.js";
 import { usePhantomMobile } from "./usePhantomMobile";
 import { signViaPhantom } from "@/lib/phantom-deeplink";
 
@@ -52,7 +52,7 @@ export interface EffectiveWallet {
    *               The signed tx will be available later via pendingSignedTx,
    *               which the caller must consume and broadcast.
    */
-  signAndSend: (tx: Transaction, redirectPath?: string) => Promise<string>;
+  signAndSend: (tx: Transaction | VersionedTransaction, redirectPath?: string) => Promise<string>;
 
   /** The signed transaction returned from a deep-link sign (deep-link path only). */
   pendingSignedTx: string | null;
@@ -119,11 +119,22 @@ export function useEffectiveWallet(): EffectiveWallet {
         if (!std.publicKey || !std.signTransaction) {
           throw new Error("Wallet not connected");
         }
-        // Set blockhash + fee payer just-in-time.
-        const { blockhash, lastValidBlockHeight } =
-          await connection.getLatestBlockhash("confirmed");
-        tx.recentBlockhash = blockhash;
-        tx.feePayer = std.publicKey;
+        let blockhash: string;
+        let lastValidBlockHeight: number;
+
+        if (tx instanceof Transaction) {
+          // Set blockhash + fee payer just-in-time for legacy transactions.
+          const res = await connection.getLatestBlockhash("confirmed");
+          blockhash = res.blockhash;
+          lastValidBlockHeight = res.lastValidBlockHeight;
+          tx.recentBlockhash = blockhash;
+          tx.feePayer = std.publicKey;
+        } else {
+          // For versioned transactions, assume recentBlockhash is already compiled in.
+          const res = await connection.getLatestBlockhash("confirmed");
+          blockhash = res.blockhash;
+          lastValidBlockHeight = res.lastValidBlockHeight;
+        }
 
         // Wallet adapter handles the user prompt + signature.
         const signed = await std.signTransaction(tx);

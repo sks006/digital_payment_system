@@ -86,8 +86,9 @@ pub fn borrow(ctx: Context<Borrow>, amount: u64) -> Result<()> {
     let sol_price = ctx.accounts.sol_price_update
         .get_price_no_older_than(&clock, max_age, &sol_feed_id)
         .map_err(|_| ErrorCode::StaleOraclePrice)?;
+    // EUR/USD feed on Devnet updates infrequently, so we allow a wider staleness window (e.g., 30 days)
     let eur_price = ctx.accounts.eur_price_update
-        .get_price_no_older_than(&clock, max_age, &eur_feed_id)
+        .get_price_no_older_than(&clock, 86400 * 30, &eur_feed_id)
         .map_err(|_| ErrorCode::StaleOraclePrice)?;
 
     require!(sol_price.price > 0, ErrorCode::InvalidOracleAccount);

@@ -20,8 +20,11 @@ import Link from "next/link";
 import {
   PublicKey,
   Transaction,
+  VersionedTransaction,
+  TransactionMessage,
   SystemProgram,
   SYSVAR_CLOCK_PUBKEY,
+  Keypair,
 } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
@@ -31,6 +34,11 @@ import {
   createTransferCheckedInstruction,
 } from "@solana/spl-token";
 import { BN } from "@coral-xyz/anchor";
+import { Buffer } from "buffer";
+import { PythSolanaReceiver } from "@pythnetwork/pyth-solana-receiver";
+import { parseAccumulatorUpdateData } from "@pythnetwork/price-service-sdk";
+import { getTreasuryPda, getConfigPda, getGuardianSetPda } from "@pythnetwork/pyth-solana-receiver/address";
+import { trimSignatures } from "@pythnetwork/pyth-solana-receiver/vaa";
 
 import { useEffectiveWallet } from "@/hooks/useEffectiveWallet";
 import { useAnchorProvider } from "@/hooks/useAnchorProvider";
@@ -183,14 +191,50 @@ export default function QRPayPage() {
         ASSOCIATED_TOKEN_PROGRAM_ID,
       );
 
+      // 1. Fetch latest VAA payload from Pyth Hermes API for SOL/USD feed
+      const solFeedId = "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
+      const hermesUrl = `https://hermes.pyth.network/v2/updates/price/latest?ids[]=${solFeedId}&encoding=base64`;
+      const res = await fetch(hermesUrl);
+      if (!res.ok) {
+        throw new Error(`Failed to fetch price update from Hermes: ${res.statusText}`);
+      }
+      const json = await res.json();
+      const updateBase64 = json.binary.data[0];
+      if (!updateBase64) {
+        throw new Error("No price update data returned from Hermes");
+      }
+
+      const accumulatorUpdateData = parseAccumulatorUpdateData(Buffer.from(updateBase64, "base64"));
+      const trimmedVaa = trimSignatures(accumulatorUpdateData.vaa, 3);
+
+      // 2. Initialize receiver and build postUpdateAtomic instruction
+      const receiver = new PythSolanaReceiver({
+        connection: provider.connection,
+        wallet: provider.wallet as any
+      });
+      const priceUpdateKeypair = Keypair.generate();
+      const treasuryId = 0;
+      const guardianSetIndex = trimmedVaa.readUInt32BE(1);
+
+      const postUpdateIx = await receiver.receiver.methods.postUpdateAtomic({
+        vaa: trimmedVaa,
+        merklePriceUpdate: accumulatorUpdateData.updates[0],
+        treasuryId
+      }).accounts({
+        priceUpdateAccount: priceUpdateKeypair.publicKey,
+        treasury: getTreasuryPda(treasuryId, receiver.receiver.programId),
+        config: getConfigPda(receiver.receiver.programId),
+        guardianSet: getGuardianSetPda(guardianSetIndex, receiver.wormhole.programId)
+      }).instruction();
+
       const amountMicro = new BN(Math.round(eurcAmount * 1e6));
-      const tx = new Transaction();
+      const instructions = [];
 
       // Create recipient ATA if missing
       const recipientAtaInfo =
         await provider.connection.getAccountInfo(recipientEurcAta);
       if (!recipientAtaInfo) {
-        tx.add(
+        instructions.push(
           createAssociatedTokenAccountInstruction(
             wallet.publicKey,
             recipientEurcAta,
@@ -202,7 +246,10 @@ export default function QRPayPage() {
         );
       }
 
-      // Borrow ix
+      // Add post price update
+      instructions.push(postUpdateIx);
+
+      // Borrow ix — uses the fresh priceUpdateKeypair account we just posted to
       const borrowIx = await (program.methods as any)
         .borrow(amountMicro)
         .accounts({
@@ -211,7 +258,7 @@ export default function QRPayPage() {
           userPosition: userPositionPda,
           eurcMint,
           userEurcAccount: userEurcAta,
-          solPriceUpdate: SOL_USD_PRICE_UPDATE,
+          solPriceUpdate: priceUpdateKeypair.publicKey,
           eurPriceUpdate: EUR_USD_PRICE_UPDATE,
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -219,10 +266,10 @@ export default function QRPayPage() {
           clock: SYSVAR_CLOCK_PUBKEY,
         } as any)
         .instruction();
-      tx.add(borrowIx);
+      instructions.push(borrowIx);
 
       // Transfer EURC user → merchant
-      tx.add(
+      instructions.push(
         createTransferCheckedInstruction(
           userEurcAta,
           eurcMint,
@@ -235,7 +282,17 @@ export default function QRPayPage() {
         ),
       );
 
-      const signature = await wallet.signAndSend(tx);
+      const { blockhash } = await provider.connection.getLatestBlockhash("confirmed");
+      const messageV0 = new TransactionMessage({
+        payerKey: wallet.publicKey,
+        recentBlockhash: blockhash,
+        instructions
+      }).compileToV0Message();
+
+      const versionedTx = new VersionedTransaction(messageV0);
+      versionedTx.sign([priceUpdateKeypair]);
+
+      const signature = await wallet.signAndSend(versionedTx);
       return signature;
     },
     [wallet, provider],
